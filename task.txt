@@ -1,0 +1,51 @@
+IV INNOVATIONS PRIVATE LIMITED
+Location – Kundli Sonipat
+Assignment: ERP System – Purchase Order (PO) Management System
+Objective:
+You are to build a Purchase Order (PO) Management System as independent micro-service or in
+integration with Odoo/NextERP. This requires tight integration between Vendors, Products, and
+Orders.
+Main Requirements
+1. Backend (Python/PostgreSQL)
+a. Create a RESTful API using Python (FastAPI or Flask preferred).
+b. Database Schema: Design a PostgreSQL schema with at least three related tables:
+• Vendors (Name, Contact, Rating)
+• Products (Name, SKU, Unit Price, Stock Level)
+• PurchaseOrders (Reference No, VendorID, Total Amount, Status)
+c. Business Logic: Implement a "Calculate Total" function that automatically applies a
+5% tax and updates the Total Amount based on the items added to the PO.
+2. Frontend (JS/TS, HTML5, CSS3, Bootstrap)
+a. Build a dashboard to view all Purchase Orders.
+b. Create a form to "Create New PO" that fetches a list of Vendors and Products via API.
+c. Dynamic UI: Use jQuery or Vanilla JS to allow users to add multiple product rows to a
+single order before submitting.
+d. Authentication using OAuth with JWT using Google or Microsoft identity provider or
+any public IDP.
+3. Gen AI Integration (The "Smart" Element) - Optional
+a. AI Feature: Add a small "Auto-Description" button next to the Product name.
+b. Requirement: Use a simple prompt (simulated or using a free API like Gemini or
+OpenAI) to generate a professional 2-sentence marketing description for the product
+based on its name and category.
+Evaluation Criteria (Show your creativity)
+Skill Area. Expectation
+Data Integrity Proper use of Primary/Foreign keys in PostgreSQL.
+Code Quality Clean, modular Python code with error handling (try/except blocks).
+Frontend A responsive, clean UI using CSS Flexbox/Grid.
+Problem Solving How you handle the "Add Row" logic in the frontend form.
+Communication A clear README.md explaining how to run the project and the logic
+behind your DB design.
+Bonus Points (The "Plus" Factors)
+• Java/Spring Boot: Rewrite one microservice (e.g., the Vendor
+Management service) in Spring Boot.
+• NoSQL: Use a NoSQL DB (like MongoDB) to store the raw JSON logs of
+all AI-generated descriptions.
+• Node.js: Use Node.js for a real-time notification feature when a PO
+status changes.
+Submission Guidelines
+1 Repository: Host your code on GitHub/GitLab.
+2 Database: Include a .sql export file or a migration script.
+3 Video Demo: A 2-minute screen recording explaining your code and
+demonstrating the "Create PO" flow.
+4 Submission URL: [ Click Here]
+Note: You can assume missing details and justify design choices during evaluation.
+Good luck, and happy coding!

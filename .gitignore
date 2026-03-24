@@ -1,0 +1,26 @@
+# Node.js
+node_modules/
+npm-debug.log
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Java / Spring Boot
+vendor-service/target/
+*.jar
+*.class
+
+# macOS / System
+.DS_Store
+
+# Ide config
+.idea/
+.vscode/
+
+# DB Data if accidentally synced
+postgres_data/
+mongo_data/

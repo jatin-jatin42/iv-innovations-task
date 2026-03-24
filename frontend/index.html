@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PO Management System</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">ERP - PO Management</a>
+            <div class="d-flex align-items-center">
+                <div id="g_id_onload"
+                    data-client_id="YOUR_GOOGLE_CLIENT_ID"
+                    data-callback="handleCredentialResponse">
+                </div>
+                <div class="g_id_signin" data-type="standard"></div>
+                <button id="logoutBtn" class="btn btn-outline-light ms-3 d-none">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5" id="main-content" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Purchase Orders Dashboard</h2>
+            <a href="create-po.html" class="btn btn-primary">Create New PO</a>
+        </div>
+        
+        <table class="table table-bordered table-striped" id="poTable">
+            <thead class="table-dark">
+                <tr>
+                    <th>Ref No #</th>
+                    <th>Vendor ID</th>
+                    <th>Total Amount (Incl 5% Tax)</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Populated via JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        function handleCredentialResponse(response) {
+            console.log("Encoded JWT ID token: " + response.credential);
+            localStorage.setItem("userToken", response.credential);
+            checkAuth();
+        }
+
+        function checkAuth() {
+            const token = localStorage.getItem("userToken");
+            if(token) {
+                document.getElementById("main-content").style.display = "block";
+                document.querySelector(".g_id_signin").classList.add("d-none");
+                document.getElementById("logoutBtn").classList.remove("d-none");
+                loadPOs();
+            } else {
+                document.getElementById("main-content").style.display = "none";
+                document.querySelector(".g_id_signin").classList.remove("d-none");
+                document.getElementById("logoutBtn").classList.add("d-none");
+            }
+        }
+
+        document.getElementById("logoutBtn").addEventListener("click", () => {
+            localStorage.removeItem("userToken");
+            checkAuth();
+        });
+
+        window.onload = checkAuth;
+
+        async function loadPOs() {
+            try {
+                const response = await fetch("http://localhost:8000/po");
+                const pos = await response.json();
+                const tbody = document.querySelector("#poTable tbody");
+                tbody.innerHTML = "";
+                pos.forEach(po => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${po.reference_no}</td>
+                            <td>${po.vendor_id}</td>
+                            <td>$${po.total_amount.toFixed(2)}</td>
+                            <td><span class="badge ${po.status === 'Pending' ? 'bg-warning' : 'bg-success'}">${po.status}</span></td>
+                        </tr>
+                    `;
+                });
+            } catch(e) {
+                console.error("Error fetching POs", e);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Purchase Order</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Load FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"/>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">ERP - PO Management</a>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Create New Purchase Order</h4>
+                <a href="index.html" class="btn btn-light btn-sm text-primary">Back to Dashboard</a>
+            </div>
+            <div class="card-body">
+                <form id="poForm">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Reference Number</label>
+                            <input type="text" id="refNo" class="form-control" required placeholder="PO-2023-001">
+                        </div>
+                        <div class="col-md-6">
+                            <!-- Currently fetching Vendors from DB via dummy, but we can call Vendor service or simulate -->
+                            <label class="form-label">Vendor</label>
+                            <select id="vendorSelect" class="form-select" required>
+                                <option value="">Select Vendor...</option>
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <h5 class="mt-4 mb-3 border-bottom pb-2">Order Items</h5>
+                    <table class="table table-bordered" id="itemsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product Name</th>
+                                <th>Quantity</th>
+                                <th>Unit Price ($)</th>
+                                <th>Smart Description (AI)</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Rows added dynamically -->
+                        </tbody>
+                    </table>
+                    
+                    <button type="button" class="btn btn-outline-secondary mb-4" id="addRowBtn">
+                        <i class="fas fa-plus"></i> Add Item Row
+                    </button>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                        <h5 class="text-danger mb-0">Total amount with 5% tax is calculated automatically on submit.</h5>
+                        <button type="submit" class="btn btn-success btn-lg px-5">Submit Order</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        let productsData = [];
+
+        async function initForm() {
+            // Load Vendors (Fallback to hardcoded if service isn't up, but simulating API call)
+            try {
+                // If vendor-service is implemented, it runs on port 8080.
+                const vendorRes = await fetch("http://localhost:8080/vendors").catch(() => null);
+                if(vendorRes && vendorRes.ok) {
+                    const vendors = await vendorRes.json();
+                    const vendorSelect = document.getElementById("vendorSelect");
+                    vendors.forEach(v => {
+                        vendorSelect.innerHTML += `<option value="${v.id}">${v.name}</option>`;
+                    });
+                } else {
+                    // Fallback Dummy Vendors matching Init.sql
+                    document.getElementById("vendorSelect").innerHTML += `
+                        <option value="1">Tech Supplies Inc</option>
+                        <option value="2">Office World</option>
+                    `;
+                }
+
+                // Load Products from PO service
+                const prodRes = await fetch("http://localhost:8000/products");
+                const products = await prodRes.json();
+                productsData = products;
+
+                addRow(); // Add at least one row initially
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function createProductOptions() {
+            return productsData.map(p => `<option value="${p.id}" data-price="${p.unit_price}">${p.name} (In stock: ${p.stock_level})</option>`).join('');
+        }
+
+        function addRow() {
+            const tbody = document.querySelector("#itemsTable tbody");
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>
+                    <select class="form-select product-select" required onchange="updatePrice(this)">
+                        <option value="">Select Product...</option>
+                        ${createProductOptions()}
+                    </select>
+                </td>
+                <td>
+                    <input type="number" class="form-control quantity-input" min="1" value="1" required>
+                </td>
+                <td>
+                    <input type="number" class="form-control price-input" readonly step="0.01">
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-info ai-desc-btn" onclick="generateDesc(this)">
+                        <i class="fas fa-magic"></i> Auto-Desc
+                    </button>
+                    <div class="ai-desc-text mt-1 text-muted" style="font-size:0.8rem;"></div>
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-danger text-white mt-1" onclick="this.closest('tr').remove()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function updatePrice(selectElem) {
+            const selectedOption = selectElem.options[selectElem.selectedIndex];
+            const price = selectedOption.getAttribute('data-price');
+            const row = selectElem.closest('tr');
+            row.querySelector('.price-input').value = price || '';
+        }
+
+        async function generateDesc(btn) {
+            const row = btn.closest('tr');
+            const selectElem = row.querySelector('.product-select');
+            
+            if(!selectElem.value) {
+                alert("Please select a product first.");
+                return;
+            }
+            
+            const productName = selectElem.options[selectElem.selectedIndex].text.split(' (')[0];
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Loading...`;
+            btn.disabled = true;
+
+            try {
+                const res = await fetch("http://localhost:8000/generate-description", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ product_name: productName, category: "General" })
+                });
+                const data = await res.json();
+                row.querySelector('.ai-desc-text').innerText = data.description;
+            } catch(e) {
+                alert("AI Generation failed.");
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        document.getElementById("addRowBtn").addEventListener("click", addRow);
+
+        document.getElementById("poForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const refNo = document.getElementById("refNo").value;
+            const vendorId = document.getElementById("vendorSelect").value;
+            
+            const items = [];
+            document.querySelectorAll("#itemsTable tbody tr").forEach(tr => {
+                const prodId = tr.querySelector('.product-select').value;
+                const qty = parseInt(tr.querySelector('.quantity-input').value);
+                const price = parseFloat(tr.querySelector('.price-input').value);
+                if(prodId && qty && price) {
+                    items.push({
+                        product_id: parseInt(prodId),
+                        quantity: qty,
+                        unit_price: price
+                    });
+                }
+            });
+
+            if(items.length === 0) {
+                alert("Please add at least one item.");
+                return;
+            }
+
+            const payload = {
+                reference_no: refNo,
+                vendor_id: parseInt(vendorId),
+                items: items
+            };
+
+            try {
+                const res = await fetch("http://localhost:8000/po", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify(payload)
+                });
+                
+                if(res.ok) {
+                    alert("Purchase Order created successfully!");
+                    window.location.href = "index.html";
+                } else {
+                    const error = await res.json();
+                    alert("Error: " + JSON.stringify(error));
+                }
+            } catch(error) {
+                console.error("Submission failed", error);
+            }
+        });
+
+        window.onload = initForm;
+    </script>
+</body>
+</html>
